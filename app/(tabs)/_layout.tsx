@@ -1,18 +1,59 @@
 /**
- * Tab Layout — Bottom navigation bar.
- * 4 tabs: Home, Stats (Analytics), Routine (Editor), Settings.
- * Matches the M3 bottom navigation design from the prototypes.
+ * Tab Layout — Premium animated bottom navigation.
  */
+import React, { useEffect, useRef } from 'react';
 import { Tabs } from 'expo-router';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { View, StyleSheet } from 'react-native';
+import { View, StyleSheet, Animated, Platform } from 'react-native';
 
 const DARK_SURFACE = '#141218';
 const DARK_SURFACE_CONTAINER = '#211F26';
 const PRIMARY_LIGHT = '#D0BCFF';
-const PRIMARY_CONTAINER = '#4F378B';
 const ON_SURFACE_VARIANT = '#C4C7C5';
 const SAGE_GREEN = '#ACC7A6';
+
+// Animated Tab Icon Component
+function TabIcon({ focused, name, activeColor, inactiveColor = ON_SURFACE_VARIANT }) {
+  const scale = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    Animated.spring(scale, {
+      toValue: focused ? 1 : 0,
+      tension: 100,
+      friction: 10,
+      useNativeDriver: true,
+    }).start();
+  }, [focused]);
+
+  // Interpolate scale for the background pill
+  const scaleX = scale.interpolate({ inputRange: [0, 1], outputRange: [0.5, 1] });
+  const opacity = scale.interpolate({ inputRange: [0, 1], outputRange: [0, 1] });
+
+  // Icon bounce
+  const iconScale = scale.interpolate({ inputRange: [0, 1], outputRange: [1, 1.1] });
+
+  return (
+    <View style={styles.iconContainer}>
+      <Animated.View
+        style={[
+          styles.activePill,
+          {
+            backgroundColor: activeColor + '30', // 20% opacity using hex
+            transform: [{ scaleX }, { scaleY: scaleX }],
+            opacity,
+          },
+        ]}
+      />
+      <Animated.View style={{ transform: [{ scale: iconScale }] }}>
+        <MaterialCommunityIcons
+          name={name}
+          size={24}
+          color={focused ? activeColor : inactiveColor}
+        />
+      </Animated.View>
+    </View>
+  );
+}
 
 export default function TabLayout() {
   return (
@@ -20,10 +61,10 @@ export default function TabLayout() {
       screenOptions={{
         headerShown: false,
         tabBarStyle: styles.tabBar,
-        tabBarActiveTintColor: PRIMARY_LIGHT,
+        tabBarShowLabel: true, // Show labels for accessibility/clarity
+        tabBarActiveTintColor: SAGE_GREEN,
         tabBarInactiveTintColor: ON_SURFACE_VARIANT,
         tabBarLabelStyle: styles.tabLabel,
-        tabBarItemStyle: styles.tabItem,
       }}
     >
       <Tabs.Screen
@@ -31,13 +72,7 @@ export default function TabLayout() {
         options={{
           title: 'Home',
           tabBarIcon: ({ focused }) => (
-            <View style={[styles.iconWrap, focused && styles.iconWrapActive]}>
-              <MaterialCommunityIcons
-                name={focused ? 'home' : 'home-outline'}
-                size={24}
-                color={focused ? SAGE_GREEN : ON_SURFACE_VARIANT}
-              />
-            </View>
+            <TabIcon focused={focused} name={focused ? 'home' : 'home-outline'} activeColor={SAGE_GREEN} />
           ),
           tabBarActiveTintColor: SAGE_GREEN,
         }}
@@ -47,13 +82,7 @@ export default function TabLayout() {
         options={{
           title: 'Stats',
           tabBarIcon: ({ focused }) => (
-            <View style={[styles.iconWrap, focused && styles.iconWrapActiveIndigo]}>
-              <MaterialCommunityIcons
-                name={focused ? 'chart-bar' : 'chart-bar'}
-                size={24}
-                color={focused ? '#aabcff' : ON_SURFACE_VARIANT}
-              />
-            </View>
+            <TabIcon focused={focused} name="chart-bar" activeColor="#aabcff" />
           ),
           tabBarActiveTintColor: '#aabcff',
         }}
@@ -63,13 +92,7 @@ export default function TabLayout() {
         options={{
           title: 'Routine',
           tabBarIcon: ({ focused }) => (
-            <View style={[styles.iconWrap, focused && styles.iconWrapActivePurple]}>
-              <MaterialCommunityIcons
-                name={focused ? 'calendar-text' : 'calendar-text-outline'}
-                size={24}
-                color={focused ? PRIMARY_LIGHT : ON_SURFACE_VARIANT}
-              />
-            </View>
+            <TabIcon focused={focused} name={focused ? 'calendar-text' : 'calendar-text-outline'} activeColor={PRIMARY_LIGHT} />
           ),
           tabBarActiveTintColor: PRIMARY_LIGHT,
         }}
@@ -79,13 +102,7 @@ export default function TabLayout() {
         options={{
           title: 'Settings',
           tabBarIcon: ({ focused }) => (
-            <View style={[styles.iconWrap, focused && styles.iconWrapActivePurple]}>
-              <MaterialCommunityIcons
-                name={focused ? 'cog' : 'cog-outline'}
-                size={24}
-                color={focused ? PRIMARY_LIGHT : ON_SURFACE_VARIANT}
-              />
-            </View>
+            <TabIcon focused={focused} name={focused ? 'cog' : 'cog-outline'} activeColor={PRIMARY_LIGHT} />
           ),
           tabBarActiveTintColor: PRIMARY_LIGHT,
         }}
@@ -98,33 +115,27 @@ const styles = StyleSheet.create({
   tabBar: {
     backgroundColor: DARK_SURFACE_CONTAINER,
     borderTopWidth: 0,
-    height: 80,
-    paddingBottom: 16,
+    height: Platform.OS === 'ios' ? 88 : 70,
+    paddingBottom: Platform.OS === 'ios' ? 28 : 12,
     paddingTop: 8,
     elevation: 0,
   },
   tabLabel: {
     fontSize: 12,
     fontWeight: '500',
-    marginTop: 2,
+    marginTop: 4,
   },
-  tabItem: {
-    gap: 2,
-  },
-  iconWrap: {
+  iconContainer: {
     width: 64,
     height: 32,
-    borderRadius: 16,
     alignItems: 'center',
     justifyContent: 'center',
+    position: 'relative',
   },
-  iconWrapActive: {
-    backgroundColor: 'rgba(172,199,166,0.2)',
-  },
-  iconWrapActiveIndigo: {
-    backgroundColor: 'rgba(79,99,172,0.3)',
-  },
-  iconWrapActivePurple: {
-    backgroundColor: 'rgba(232,222,248,0.15)',
+  activePill: {
+    position: 'absolute',
+    width: 48,
+    height: 32,
+    borderRadius: 16,
   },
 });

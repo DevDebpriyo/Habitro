@@ -16,6 +16,8 @@ import ProgressRing from '../../src/components/ProgressRing';
 import RoutineItemCard from '../../src/components/RoutineItemCard';
 import SectionHeader from '../../src/components/SectionHeader';
 import GrowthPlant from '../../src/components/GrowthPlant';
+import Logo from '../../src/components/Logo';
+import ScreenTransition from '../../src/components/ScreenTransition';
 import { darkTheme, spacing, fontSize, radii, shadows } from '../../src/theme';
 import { formatDateDisplay, getGreeting, getToday } from '../../src/utils/dateHelpers';
 
@@ -61,69 +63,69 @@ export default function HomeScreen() {
   return (
     <View style={styles.safeArea}>
       <StatusBar barStyle="light-content" backgroundColor={darkTheme.surface} />
+      <ScreenTransition>
 
-      {/* Header */}
-      <View style={styles.header}>
-        <View style={styles.headerRow}>
-          <TouchableOpacity style={styles.menuBtn}>
-            <MaterialCommunityIcons name="menu" size={24} color={darkTheme.onSurface} />
-          </TouchableOpacity>
-          <View style={styles.avatar}>
-            <Text style={styles.avatarText}>{userName.charAt(0).toUpperCase()}</Text>
+        {/* Header */}
+        <View style={styles.header}>
+          <View style={styles.headerRow}>
+            <Logo />
+            <View style={styles.avatar}>
+              <Text style={styles.avatarText}>{userName.charAt(0).toUpperCase()}</Text>
+            </View>
+          </View>
+          <View style={styles.greetingWrap}>
+            <Text style={styles.greeting}>{greeting}, {userName}</Text>
+            <Text style={styles.dateText}>{dateStr}</Text>
           </View>
         </View>
-        <View style={styles.greetingWrap}>
-          <Text style={styles.greeting}>{greeting}, {userName}</Text>
-          <Text style={styles.dateText}>{dateStr}</Text>
-        </View>
-      </View>
 
-      {isLoading && routines.length === 0 ? (
-        <View style={styles.loadingWrap}>
-          <ActivityIndicator size="large" color={darkTheme.sageGreen} />
-        </View>
-      ) : (
-        <FlatList
-          data={items}
-          keyExtractor={item => item.id}
-          contentContainerStyle={styles.listContent}
-          showsVerticalScrollIndicator={false}
-          extraData={completions}
-          ListHeaderComponent={
-            <>
-              <View style={styles.progressCard}>
-                <View style={styles.glowTopRight} />
-                <View style={styles.glowBottomLeft} />
-                <View style={styles.progressRow}>
-                  <GrowthPlant completionPercentage={total > 0 ? completed / total : 0} />
-                  <ProgressRing completed={completed} total={total} />
+        {isLoading && routines.length === 0 ? (
+          <View style={styles.loadingWrap}>
+            <ActivityIndicator size="large" color={darkTheme.sageGreen} />
+          </View>
+        ) : (
+          <FlatList
+            data={items}
+            keyExtractor={item => item.id}
+            contentContainerStyle={styles.listContent}
+            showsVerticalScrollIndicator={false}
+            extraData={completions}
+            ListHeaderComponent={
+              <>
+                <View style={styles.progressCard}>
+                  <View style={styles.glowTopRight} />
+                  <View style={styles.glowBottomLeft} />
+                  <View style={styles.progressRow}>
+                    <GrowthPlant completionPercentage={total > 0 ? completed / total : 0} />
+                    <ProgressRing completed={completed} total={total} size={130} strokeWidth={10} />
+                  </View>
                 </View>
+                <SectionHeader title="Today's Tasks" actionText={`${completed}/${total}`} />
+              </>
+            }
+            renderItem={({ item }) => (
+              <View style={styles.cardWrap}>
+                <RoutineItemCard
+                  title={item.title}
+                  startTime={item.startTime}
+                  endTime={item.endTime}
+                  category={item.category}
+                  isCompleted={item.isCompleted}
+                  onToggle={() => handleToggle(item.id)}
+                />
               </View>
-              <SectionHeader title="Today's Tasks" actionText={`${completed}/${total}`} />
-            </>
-          }
-          renderItem={({ item }) => (
-            <View style={styles.cardWrap}>
-              <RoutineItemCard
-                title={item.title}
-                startTime={item.startTime}
-                endTime={item.endTime}
-                category={item.category}
-                isCompleted={item.isCompleted}
-                onToggle={() => handleToggle(item.id)}
-              />
-            </View>
-          )}
-          ListEmptyComponent={
-            <View style={styles.emptyWrap}>
-              <MaterialCommunityIcons name="plus-circle-outline" size={48} color={darkTheme.onSurfaceVariant} />
-              <Text style={styles.emptyText}>No tasks yet. Tap + to add your first routine!</Text>
-            </View>
-          }
-          ListFooterComponent={<View style={{ height: 100 }} />}
-        />
-      )}
+            )}
+            ListEmptyComponent={
+              <View style={styles.emptyWrap}>
+                <MaterialCommunityIcons name="plus-circle-outline" size={48} color={darkTheme.onSurfaceVariant} />
+                <Text style={styles.emptyText}>No tasks yet. Tap + to add your first routine!</Text>
+              </View>
+            }
+            ListFooterComponent={<View style={{ height: 100 }} />}
+          />
+        )}
 
+      </ScreenTransition>
       <TouchableOpacity style={styles.fab} activeOpacity={0.8} onPress={handleAddPress}>
         <MaterialCommunityIcons name="plus" size={24} color={darkTheme.surfaceContainer} />
       </TouchableOpacity>
@@ -209,21 +211,21 @@ const styles = StyleSheet.create({
   },
   glowTopRight: {
     position: 'absolute',
-    top: 0,
-    right: 0,
-    width: 128,
-    height: 128,
-    borderRadius: 64,
-    backgroundColor: 'rgba(172,199,166,0.05)',
+    top: '-30%',
+    right: '-20%',
+    width: 200,
+    height: 200,
+    borderRadius: 100,
+    backgroundColor: 'rgba(172,199,166,0.08)',
   },
   glowBottomLeft: {
     position: 'absolute',
-    bottom: 0,
-    left: 0,
-    width: 128,
-    height: 128,
-    borderRadius: 64,
-    backgroundColor: 'rgba(172,199,166,0.05)',
+    bottom: '-30%',
+    left: '-20%',
+    width: 200,
+    height: 200,
+    borderRadius: 100,
+    backgroundColor: 'rgba(172,199,166,0.08)',
   },
   cardWrap: {
     marginBottom: spacing.md,

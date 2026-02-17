@@ -66,7 +66,7 @@ export default function RoutineItemCard({
                     {/* Category badge */}
                     <View style={[styles.categoryBadge, { backgroundColor: chipColor.bg }]}>
                         <View style={[styles.categoryDot, { backgroundColor: chipColor.dot }]} />
-                        <Text style={styles.categoryText}>{category.toUpperCase()}</Text>
+                        <Text style={[styles.categoryText, { color: chipColor.text }]}>{category.toUpperCase()}</Text>
                     </View>
                 </View>
 

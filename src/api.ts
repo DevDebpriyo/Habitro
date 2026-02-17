@@ -6,7 +6,8 @@ import { Platform } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 // ⚠️  Use EXPO_PUBLIC_API_URL for production deployment
-export const BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'http://10.249.209.132:3001';
+const apiUrl = process.env.EXPO_PUBLIC_API_URL || 'http://10.249.209.132:3001';
+export const BASE_URL = apiUrl.replace(/\/$/, '');
 
 const TOKEN_KEY = 'auth_token';
 
