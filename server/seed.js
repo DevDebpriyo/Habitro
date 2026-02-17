@@ -1,15 +1,21 @@
 /**
- * Seed script — populates MongoDB with demo routines and 30 days of completion history.
+ * Seed script — creates a demo user and populates their routines + 30 days of completions.
  *
  * Usage:  node server/seed.js
  */
 require('dotenv').config();
 const mongoose = require('mongoose');
-const { Routine, Completion } = require('./models');
+const bcrypt = require('bcryptjs');
+const { User, Routine, Completion } = require('./models');
 
 const MONGO_URI = process.env.DATABASE_URL;
 
-// ── Demo Routines (matches the design prototypes) ──
+// ── Demo User ──
+const DEMO_EMAIL = 'demo@habittracker.app';
+const DEMO_PASSWORD = 'demo123';
+const DEMO_NAME = 'Alex';
+
+// ── Demo Routines ──
 const demoRoutines = [
     { routineId: 'r1', title: 'Morning Meditation', startTime: '06:00', endTime: '06:15', category: 'Mindfulness', required: true, order: 0 },
     { routineId: 'r2', title: 'Exercise Routine', startTime: '06:30', endTime: '07:15', category: 'Fitness', required: true, order: 1 },
@@ -21,32 +27,24 @@ const demoRoutines = [
     { routineId: 'r8', title: 'Skill Practice', startTime: '21:00', endTime: '22:00', category: 'Growth', required: false, order: 7 },
 ];
 
-// Seeded random — consistent results every run
 function seededRandom(seed) {
     let s = seed;
-    return () => {
-        s = (s * 16807) % 2147483647;
-        return (s - 1) / 2147483646;
-    };
+    return () => { s = (s * 16807) % 2147483647; return (s - 1) / 2147483646; };
 }
 
-function generateCompletions() {
+function generateCompletions(userId) {
     const rng = seededRandom(42);
     const completions = [];
     const today = new Date();
-
     for (let dayOffset = 29; dayOffset >= 0; dayOffset--) {
         const d = new Date(today);
         d.setDate(d.getDate() - dayOffset);
         const dateStr = d.toISOString().split('T')[0];
-
         for (const routine of demoRoutines) {
-            // ~65% chance of completion, lower on weekends
-            const dayOfWeek = d.getDay();
-            const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
+            const isWeekend = d.getDay() === 0 || d.getDay() === 6;
             const threshold = isWeekend ? 0.50 : 0.70;
-
             completions.push({
+                userId,
                 date: dateStr,
                 routineId: routine.routineId,
                 completed: rng() < threshold,
@@ -63,21 +61,37 @@ async function seed() {
         await mongoose.connect(MONGO_URI);
         console.log('✅ Connected!\n');
 
+        // Drop old indexes that don't have userId
+        try {
+            await Routine.collection.dropIndexes();
+            await Completion.collection.dropIndexes();
+            console.log('🔧 Dropped old indexes.');
+        } catch (e) { /* ignore if no indexes */ }
+
         // Clear existing data
+        await User.deleteMany({});
         await Routine.deleteMany({});
         await Completion.deleteMany({});
         console.log('🧹 Cleared existing data.');
 
+        // Create demo user
+        const salt = await bcrypt.genSalt(12);
+        const hashed = await bcrypt.hash(DEMO_PASSWORD, salt);
+        const user = await User.create({ name: DEMO_NAME, email: DEMO_EMAIL, password: hashed });
+        console.log(`👤 Created demo user: ${DEMO_EMAIL} / ${DEMO_PASSWORD}`);
+
         // Insert routines
-        await Routine.insertMany(demoRoutines);
+        const routinesWithUser = demoRoutines.map(r => ({ ...r, userId: user._id }));
+        await Routine.insertMany(routinesWithUser);
         console.log(`📋 Inserted ${demoRoutines.length} demo routines.`);
 
         // Insert completions
-        const completions = generateCompletions();
+        const completions = generateCompletions(user._id);
         await Completion.insertMany(completions);
-        console.log(`📊 Inserted ${completions.length} completion records (30 days × ${demoRoutines.length} routines).`);
+        console.log(`📊 Inserted ${completions.length} completion records.\n`);
 
-        console.log('\n🎉 Seed complete!');
+        console.log('🎉 Seed complete!');
+        console.log(`   Login: ${DEMO_EMAIL} / ${DEMO_PASSWORD}`);
     } catch (err) {
         console.error('❌ Seed failed:', err.message);
     } finally {

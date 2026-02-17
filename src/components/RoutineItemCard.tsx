@@ -7,6 +7,7 @@ import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { darkTheme, spacing, fontSize, radii, CategoryColors } from '../theme';
+import { formatTimeRange } from '../utils/timeUtils';
 
 interface Props {
     title: string;
@@ -26,7 +27,7 @@ export default function RoutineItemCard({
     onToggle,
 }: Props) {
     const chipColor = CategoryColors[category] ?? CategoryColors['Mind'];
-    const timeText = endTime ? `${startTime} - ${endTime}` : startTime;
+    const timeText = formatTimeRange(startTime, endTime);
 
     return (
         <TouchableOpacity

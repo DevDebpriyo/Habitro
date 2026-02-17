@@ -1,28 +1,84 @@
 /**
  * API client — centralized HTTP calls to the Express backend.
- *
- * Your PC's local IP is used so a physical Android device
- * on the same Wi-Fi network can reach the server.
- * If your IP changes, update the value below.
+ * Includes auth endpoints and auto-attaches JWT Bearer token.
  */
 import { Platform } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
-// ⚠️  Your PC's local IP — both phone and PC must be on the same Wi-Fi
-const LOCAL_IP = '10.249.209.109';
+// ⚠️  Use EXPO_PUBLIC_API_URL for production deployment
+export const BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'http://10.249.209.132:3001';
 
-export const BASE_URL = `http://${LOCAL_IP}:3001`;
+const TOKEN_KEY = 'auth_token';
 
-// ── Generic fetch helper ──
+// ── Token management ──
+let cachedToken: string | null = null;
+
+export async function getToken(): Promise<string | null> {
+    if (cachedToken) return cachedToken;
+    cachedToken = await AsyncStorage.getItem(TOKEN_KEY);
+    return cachedToken;
+}
+
+export async function setToken(token: string): Promise<void> {
+    cachedToken = token;
+    await AsyncStorage.setItem(TOKEN_KEY, token);
+}
+
+export async function clearToken(): Promise<void> {
+    cachedToken = null;
+    await AsyncStorage.removeItem(TOKEN_KEY);
+}
+
+// ── Generic fetch helper with auth ──
 async function apiFetch<T>(path: string, options?: RequestInit): Promise<T> {
-    const res = await fetch(`${BASE_URL}${path}`, {
-        headers: { 'Content-Type': 'application/json' },
-        ...options,
-    });
+    const token = await getToken();
+    const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+        ...(options?.headers as Record<string, string> || {}),
+    };
+    if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+    }
+
+    const res = await fetch(`${BASE_URL}${path}`, { ...options, headers });
     if (!res.ok) {
-        const body = await res.text();
-        throw new Error(`API ${res.status}: ${body}`);
+        const body = await res.json().catch(() => ({ error: 'Unknown error' }));
+        throw new Error(body.error || `API ${res.status}`);
     }
     return res.json() as Promise<T>;
+}
+
+// ═══════════════════════════════════════════
+//  AUTH
+// ═══════════════════════════════════════════
+
+export interface AuthResponse {
+    token: string;
+    user: { id: string; name: string; email: string };
+}
+
+export interface UserProfile {
+    id: string;
+    name: string;
+    email: string;
+}
+
+export function loginApi(email: string, password: string): Promise<AuthResponse> {
+    return apiFetch('/api/auth/login', {
+        method: 'POST',
+        body: JSON.stringify({ email, password }),
+    });
+}
+
+export function registerApi(name: string, email: string, password: string): Promise<AuthResponse> {
+    return apiFetch('/api/auth/register', {
+        method: 'POST',
+        body: JSON.stringify({ name, email, password }),
+    });
+}
+
+export function getMeApi(): Promise<UserProfile> {
+    return apiFetch('/api/auth/me');
 }
 
 // ═══════════════════════════════════════════

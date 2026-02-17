@@ -1,8 +1,7 @@
 /**
  * Home Screen — Main focus screen.
- * Shows greeting, progress ring, today's tasks.
- * Reactive: subscribes to routines + completions so any change
- * from the editor or checkbox toggle re-renders instantly.
+ * Fetches from MongoDB, shows tasks sorted by time in 12h format.
+ * Uses real user name from auth store.
  */
 import React, { useMemo, useCallback, useEffect } from 'react';
 import {
@@ -12,9 +11,11 @@ import {
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useRoutineStore } from '../../src/store/useRoutineStore';
+import { useAuthStore } from '../../src/store/authStore';
 import ProgressRing from '../../src/components/ProgressRing';
 import RoutineItemCard from '../../src/components/RoutineItemCard';
 import SectionHeader from '../../src/components/SectionHeader';
+import GrowthPlant from '../../src/components/GrowthPlant';
 import { darkTheme, spacing, fontSize, radii, shadows } from '../../src/theme';
 import { formatDateDisplay, getGreeting, getToday } from '../../src/utils/dateHelpers';
 
@@ -23,19 +24,15 @@ const STATUSBAR_HEIGHT = Platform.OS === 'android' ? (StatusBar.currentHeight ??
 export default function HomeScreen() {
   const router = useRouter();
 
-  // ✅ Subscribe to primitive state — triggers re-render on any change
   const routines = useRoutineStore(s => s.routines);
   const completions = useRoutineStore(s => s.completions);
   const toggleTask = useRoutineStore(s => s.toggleTask);
   const fetchAll = useRoutineStore(s => s.fetchAll);
   const isLoading = useRoutineStore(s => s.isLoading);
+  const user = useAuthStore(s => s.user);
 
-  // ✅ Fetch from MongoDB on mount
-  useEffect(() => {
-    fetchAll();
-  }, []);
+  useEffect(() => { fetchAll(); }, []);
 
-  // ✅ Compute today's data reactively, SORTED by startTime
   const today = getToday();
   const todayData = useMemo(() => {
     const todayRecords = completions.filter(c => c.date === today);
@@ -45,7 +42,6 @@ export default function HomeScreen() {
         isCompleted: todayRecords.find(c => c.routineId === r.id)?.completed ?? false,
       }))
       .sort((a, b) => {
-        // Sort by startTime ascending ("06:00" < "09:00")
         const timeA = a.startTime.replace(':', '');
         const timeB = b.startTime.replace(':', '');
         return timeA.localeCompare(timeB);
@@ -55,17 +51,12 @@ export default function HomeScreen() {
   }, [routines, completions, today]);
 
   const { completed, total, items } = todayData;
-
+  const userName = user?.name || 'there';
   const greeting = getGreeting();
   const dateStr = formatDateDisplay(new Date());
 
-  const handleToggle = useCallback((id: string) => {
-    toggleTask(id);
-  }, [toggleTask]);
-
-  const handleAddPress = useCallback(() => {
-    router.push('/(tabs)/editor');
-  }, [router]);
+  const handleToggle = useCallback((id: string) => { toggleTask(id); }, [toggleTask]);
+  const handleAddPress = useCallback(() => { router.push('/(tabs)/editor'); }, [router]);
 
   return (
     <View style={styles.safeArea}>
@@ -78,50 +69,61 @@ export default function HomeScreen() {
             <MaterialCommunityIcons name="menu" size={24} color={darkTheme.onSurface} />
           </TouchableOpacity>
           <View style={styles.avatar}>
-            <MaterialCommunityIcons name="account" size={24} color={darkTheme.onSurfaceVariant} />
+            <Text style={styles.avatarText}>{userName.charAt(0).toUpperCase()}</Text>
           </View>
         </View>
         <View style={styles.greetingWrap}>
-          <Text style={styles.greeting}>{greeting}</Text>
+          <Text style={styles.greeting}>{greeting}, {userName}</Text>
           <Text style={styles.dateText}>{dateStr}</Text>
         </View>
       </View>
 
-      <FlatList
-        data={items}
-        keyExtractor={item => item.id}
-        contentContainerStyle={styles.listContent}
-        showsVerticalScrollIndicator={false}
-        extraData={completions}
-        ListHeaderComponent={
-          <>
-            {/* Progress Ring Card */}
-            <View style={styles.progressCard}>
-              <View style={styles.glowTopRight} />
-              <View style={styles.glowBottomLeft} />
-              <ProgressRing completed={completed} total={total} />
+      {isLoading && routines.length === 0 ? (
+        <View style={styles.loadingWrap}>
+          <ActivityIndicator size="large" color={darkTheme.sageGreen} />
+        </View>
+      ) : (
+        <FlatList
+          data={items}
+          keyExtractor={item => item.id}
+          contentContainerStyle={styles.listContent}
+          showsVerticalScrollIndicator={false}
+          extraData={completions}
+          ListHeaderComponent={
+            <>
+              <View style={styles.progressCard}>
+                <View style={styles.glowTopRight} />
+                <View style={styles.glowBottomLeft} />
+                <View style={styles.progressRow}>
+                  <GrowthPlant completionPercentage={total > 0 ? completed / total : 0} />
+                  <ProgressRing completed={completed} total={total} />
+                </View>
+              </View>
+              <SectionHeader title="Today's Tasks" actionText={`${completed}/${total}`} />
+            </>
+          }
+          renderItem={({ item }) => (
+            <View style={styles.cardWrap}>
+              <RoutineItemCard
+                title={item.title}
+                startTime={item.startTime}
+                endTime={item.endTime}
+                category={item.category}
+                isCompleted={item.isCompleted}
+                onToggle={() => handleToggle(item.id)}
+              />
             </View>
+          )}
+          ListEmptyComponent={
+            <View style={styles.emptyWrap}>
+              <MaterialCommunityIcons name="plus-circle-outline" size={48} color={darkTheme.onSurfaceVariant} />
+              <Text style={styles.emptyText}>No tasks yet. Tap + to add your first routine!</Text>
+            </View>
+          }
+          ListFooterComponent={<View style={{ height: 100 }} />}
+        />
+      )}
 
-            {/* Section Header */}
-            <SectionHeader title="Today's Tasks" actionText="View All" />
-          </>
-        }
-        renderItem={({ item }) => (
-          <View style={styles.cardWrap}>
-            <RoutineItemCard
-              title={item.title}
-              startTime={item.startTime}
-              endTime={item.endTime}
-              category={item.category}
-              isCompleted={item.isCompleted}
-              onToggle={() => handleToggle(item.id)}
-            />
-          </View>
-        )}
-        ListFooterComponent={<View style={{ height: 100 }} />}
-      />
-
-      {/* FAB — navigates to editor */}
       <TouchableOpacity style={styles.fab} activeOpacity={0.8} onPress={handleAddPress}>
         <MaterialCommunityIcons name="plus" size={24} color={darkTheme.surfaceContainer} />
       </TouchableOpacity>
@@ -155,11 +157,14 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: darkTheme.surfaceContainerHigh,
+    backgroundColor: darkTheme.sageGreen,
     alignItems: 'center',
     justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: 'rgba(142,145,143,0.2)',
+  },
+  avatarText: {
+    fontSize: fontSize.bodyLarge,
+    fontWeight: '700',
+    color: darkTheme.surfaceContainer,
   },
   greetingWrap: {
     paddingHorizontal: spacing.sm,
@@ -176,6 +181,11 @@ const styles = StyleSheet.create({
     color: darkTheme.onSurfaceVariant,
     marginTop: spacing.xs,
   },
+  loadingWrap: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   listContent: {
     paddingHorizontal: spacing.base,
     paddingTop: spacing.base,
@@ -191,6 +201,11 @@ const styles = StyleSheet.create({
     position: 'relative',
     overflow: 'hidden',
     ...shadows.elevation1,
+  },
+  progressRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xl,
   },
   glowTopRight: {
     position: 'absolute',
@@ -212,6 +227,16 @@ const styles = StyleSheet.create({
   },
   cardWrap: {
     marginBottom: spacing.md,
+  },
+  emptyWrap: {
+    alignItems: 'center',
+    paddingVertical: 48,
+    gap: spacing.base,
+  },
+  emptyText: {
+    fontSize: fontSize.body,
+    color: darkTheme.onSurfaceVariant,
+    textAlign: 'center',
   },
   fab: {
     position: 'absolute',

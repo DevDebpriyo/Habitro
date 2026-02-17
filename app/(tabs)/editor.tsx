@@ -9,12 +9,14 @@ import {
     StyleSheet, StatusBar, Modal, TextInput,
     KeyboardAvoidingView, Platform, Alert,
 } from 'react-native';
+import DateTimePicker from '@react-native-community/datetimepicker';
 
 const STATUSBAR_HEIGHT = Platform.OS === 'android' ? (StatusBar.currentHeight ?? 32) : 0;
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useRoutineStore } from '../../src/store/useRoutineStore';
 import { darkTheme, spacing, fontSize, radii, CategoryColors } from '../../src/theme';
 import { Category, RoutineItem } from '../../src/types';
+import { to12Hour, formatTimeRange } from '../../src/utils/timeUtils';
 
 /** Category chip colors for the editor (uses brighter palette) */
 const editorChipColors: Record<string, { bg: string; text: string }> = {
@@ -45,8 +47,13 @@ export default function EditorScreen() {
     const [modalVisible, setModalVisible] = useState(false);
     const [editingId, setEditingId] = useState<string | null>(null);
     const [formTitle, setFormTitle] = useState('');
-    const [formStartTime, setFormStartTime] = useState('');
-    const [formEndTime, setFormEndTime] = useState('');
+
+    // Time picker state
+    const [startTime, setStartTime] = useState(new Date()); // Internal Date object for picker
+    const [endTime, setEndTime] = useState(new Date());     // Internal Date object for picker
+    const [showStartPicker, setShowStartPicker] = useState(false);
+    const [showEndPicker, setShowEndPicker] = useState(false);
+
     const [formCategory, setFormCategory] = useState<Category>('Work');
 
     // Calculate total duration
@@ -63,8 +70,16 @@ export default function EditorScreen() {
     const openAdd = () => {
         setEditingId(null);
         setFormTitle('');
-        setFormStartTime('');
-        setFormEndTime('');
+
+        // Default 07:00 - 07:15
+        const start = new Date();
+        start.setHours(7, 0, 0, 0);
+        setStartTime(start);
+
+        const end = new Date();
+        end.setHours(7, 15, 0, 0);
+        setEndTime(end);
+
         setFormCategory('Work');
         setModalVisible(true);
     };
@@ -72,28 +87,48 @@ export default function EditorScreen() {
     const openEdit = (item: RoutineItem) => {
         setEditingId(item.id);
         setFormTitle(item.title);
-        setFormStartTime(item.startTime);
-        setFormEndTime(item.endTime);
+
+        const [sh, sm] = item.startTime.split(':').map(Number);
+        const start = new Date();
+        start.setHours(sh, sm, 0, 0);
+        setStartTime(start);
+
+        if (item.endTime) {
+            const [eh, em] = item.endTime.split(':').map(Number);
+            const end = new Date();
+            end.setHours(eh, em, 0, 0);
+            setEndTime(end);
+        }
+
         setFormCategory(item.category);
         setModalVisible(true);
+    };
+
+    const formatTimeForDB = (date: Date) => {
+        const h = date.getHours().toString().padStart(2, '0');
+        const m = date.getMinutes().toString().padStart(2, '0');
+        return `${h}:${m}`;
     };
 
     const handleSave = () => {
         if (!formTitle.trim()) return;
 
+        const startStr = formatTimeForDB(startTime);
+        const endStr = formatTimeForDB(endTime);
+
         if (editingId) {
             updateRoutine(editingId, {
                 title: formTitle.trim(),
-                startTime: formStartTime || '00:00',
-                endTime: formEndTime || '00:00',
+                startTime: startStr,
+                endTime: endStr,
                 category: formCategory,
             });
         } else {
             addRoutine({
                 id: Date.now().toString(),
                 title: formTitle.trim(),
-                startTime: formStartTime || '00:00',
-                endTime: formEndTime || '00:00',
+                startTime: startStr,
+                endTime: endStr,
                 category: formCategory,
                 required: true,
             });
@@ -108,9 +143,19 @@ export default function EditorScreen() {
         ]);
     };
 
+    const onStartChange = (event: any, selectedDate?: Date) => {
+        setShowStartPicker(false);
+        if (selectedDate) setStartTime(selectedDate);
+    };
+
+    const onEndChange = (event: any, selectedDate?: Date) => {
+        setShowEndPicker(false);
+        if (selectedDate) setEndTime(selectedDate);
+    };
+
     const renderItem = ({ item }: { item: RoutineItem }) => {
         const chip = editorChipColors[item.category] ?? editorChipColors['Work'];
-        const timeText = item.endTime ? `${item.startTime} - ${item.endTime}` : item.startTime;
+        const timeText = formatTimeRange(item.startTime, item.endTime);
 
         return (
             <TouchableOpacity
@@ -230,22 +275,50 @@ export default function EditorScreen() {
                             onChangeText={setFormTitle}
                         />
 
+                        {/* Date Pickers */}
                         <View style={styles.timeInputRow}>
-                            <TextInput
-                                style={[styles.input, { flex: 1 }]}
-                                placeholder="Start (e.g. 07:00)"
-                                placeholderTextColor="#6b7280"
-                                value={formStartTime}
-                                onChangeText={setFormStartTime}
-                            />
-                            <TextInput
-                                style={[styles.input, { flex: 1 }]}
-                                placeholder="End (e.g. 07:15)"
-                                placeholderTextColor="#6b7280"
-                                value={formEndTime}
-                                onChangeText={setFormEndTime}
-                            />
+                            {/* Start Time */}
+                            <TouchableOpacity
+                                style={[styles.timeButton, { flex: 1 }]}
+                                onPress={() => setShowStartPicker(true)}
+                            >
+                                <Text style={styles.timeLabel}>Start</Text>
+                                <Text style={styles.timeValue}>
+                                    {to12Hour(formatTimeForDB(startTime))}
+                                </Text>
+                            </TouchableOpacity>
+
+                            {/* End Time */}
+                            <TouchableOpacity
+                                style={[styles.timeButton, { flex: 1 }]}
+                                onPress={() => setShowEndPicker(true)}
+                            >
+                                <Text style={styles.timeLabel}>End</Text>
+                                <Text style={styles.timeValue}>
+                                    {to12Hour(formatTimeForDB(endTime))}
+                                </Text>
+                            </TouchableOpacity>
                         </View>
+
+                        {showStartPicker && (
+                            <DateTimePicker
+                                value={startTime}
+                                mode="time"
+                                is24Hour={false}
+                                display="default"
+                                onChange={onStartChange}
+                            />
+                        )}
+
+                        {showEndPicker && (
+                            <DateTimePicker
+                                value={endTime}
+                                mode="time"
+                                is24Hour={false}
+                                display="default"
+                                onChange={onEndChange}
+                            />
+                        )}
 
                         {/* Category selector */}
                         <Text style={styles.categoryLabel}>Category</Text>
@@ -453,6 +526,23 @@ const styles = StyleSheet.create({
     timeInputRow: {
         flexDirection: 'row',
         gap: spacing.md,
+    },
+    timeButton: {
+        backgroundColor: darkTheme.surfaceDark3,
+        borderRadius: radii.sm,
+        paddingHorizontal: spacing.base,
+        paddingVertical: spacing.sm,
+        alignItems: 'center',
+    },
+    timeLabel: {
+        fontSize: fontSize.caption,
+        color: darkTheme.outline,
+        marginBottom: 2,
+    },
+    timeValue: {
+        fontSize: fontSize.bodyLarge,
+        color: darkTheme.onSurface,
+        fontWeight: '500',
     },
     categoryLabel: {
         fontSize: fontSize.body,

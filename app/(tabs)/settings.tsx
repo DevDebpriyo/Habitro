@@ -10,15 +10,22 @@ import {
 
 const STATUSBAR_HEIGHT = Platform.OS === 'android' ? (StatusBar.currentHeight ?? 32) : 0;
 import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
 import { useRoutineStore } from '../../src/store/useRoutineStore';
+import { useAuthStore } from '../../src/store/authStore';
 import { darkTheme, spacing, fontSize, radii } from '../../src/theme';
 
 export default function SettingsScreen() {
+    const router = useRouter();
     const isDarkMode = useRoutineStore(s => s.isDarkMode);
     const toggleDarkMode = useRoutineStore(s => s.toggleDarkMode);
     const resetRoutines = useRoutineStore(s => s.resetRoutines);
     const clearHistory = useRoutineStore(s => s.clearHistory);
     const fetchAll = useRoutineStore(s => s.fetchAll);
+    const clearAllRoutineData = useRoutineStore(s => s.clearAll);
+
+    const user = useAuthStore(s => s.user);
+    const logout = useAuthStore(s => s.logout);
 
     useEffect(() => {
         fetchAll();
@@ -46,6 +53,25 @@ export default function SettingsScreen() {
         );
     };
 
+    const handleLogout = () => {
+        Alert.alert(
+            'Log Out',
+            'Are you sure you want to log out?',
+            [
+                { text: 'Cancel', style: 'cancel' },
+                {
+                    text: 'Log Out',
+                    style: 'destructive',
+                    onPress: async () => {
+                        await logout();
+                        clearAllRoutineData();
+                        router.replace('/login');
+                    }
+                },
+            ]
+        );
+    };
+
     const handleExport = () => {
         Alert.alert('Export Data', 'Data export will be available in a future update.');
     };
@@ -67,6 +93,19 @@ export default function SettingsScreen() {
                 contentContainerStyle={styles.scrollContent}
                 showsVerticalScrollIndicator={false}
             >
+                {/* User Profile Card */}
+                {user && (
+                    <View style={styles.profileCard}>
+                        <View style={styles.avatar}>
+                            <Text style={styles.avatarText}>{user.name.charAt(0).toUpperCase()}</Text>
+                        </View>
+                        <View style={styles.profileInfo}>
+                            <Text style={styles.profileName}>{user.name}</Text>
+                            <Text style={styles.profileEmail}>{user.email}</Text>
+                        </View>
+                    </View>
+                )}
+
                 {/* Dark Mode Toggle */}
                 <View style={styles.card}>
                     <View style={styles.darkModeRow}>
@@ -113,6 +152,15 @@ export default function SettingsScreen() {
                         </View>
                     </TouchableOpacity>
                 </View>
+
+                {/* Account Actions */}
+                <View style={styles.sectionHeader}>
+                    <Text style={styles.sectionTitle}>Account</Text>
+                </View>
+                <TouchableOpacity style={styles.logoutBtn} onPress={handleLogout} activeOpacity={0.8}>
+                    <MaterialCommunityIcons name="logout" size={24} color={darkTheme.error} />
+                    <Text style={styles.logoutText}>Log Out</Text>
+                </TouchableOpacity>
 
                 {/* Info section */}
                 <View style={styles.card}>
@@ -181,6 +229,39 @@ const styles = StyleSheet.create({
         paddingHorizontal: spacing.base,
         gap: spacing.xl,
         paddingTop: spacing.sm,
+    },
+    profileCard: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: darkTheme.surfaceDark2,
+        padding: spacing.base,
+        borderRadius: radii.md,
+        gap: spacing.base,
+    },
+    avatar: {
+        width: 48,
+        height: 48,
+        borderRadius: 24,
+        backgroundColor: darkTheme.sageGreen,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    avatarText: {
+        fontSize: 20,
+        fontWeight: '700',
+        color: darkTheme.surfaceContainer,
+    },
+    profileInfo: {
+        flex: 1,
+    },
+    profileName: {
+        fontSize: fontSize.bodyLarge,
+        fontWeight: '600',
+        color: darkTheme.onSurface,
+    },
+    profileEmail: {
+        fontSize: fontSize.body,
+        color: darkTheme.onSurfaceVariant,
     },
     card: {
         backgroundColor: darkTheme.surfaceDark2,
@@ -262,6 +343,19 @@ const styles = StyleSheet.create({
         fontSize: fontSize.small,
         color: darkTheme.error,
         opacity: 0.7,
+    },
+    logoutBtn: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: spacing.base,
+        padding: spacing.base,
+        backgroundColor: 'rgba(239,68,68,0.1)',
+        borderRadius: radii.md,
+    },
+    logoutText: {
+        fontSize: fontSize.bodyLarge,
+        fontWeight: '600',
+        color: darkTheme.error,
     },
     infoRow: {
         flexDirection: 'row',
