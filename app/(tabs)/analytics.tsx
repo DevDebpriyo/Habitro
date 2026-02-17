@@ -17,6 +17,7 @@ import { darkTheme, spacing, fontSize, radii, shadows } from '../../src/theme';
 import { getToday, getLastNDays, getDayAbbr } from '../../src/utils/dateHelpers';
 import { calculateCurrentStreak, calculateBestStreak } from '../../src/utils/streaks';
 import { generateInsights } from '../../src/analytics/insights';
+import ScreenTransition from '../../src/components/ScreenTransition';
 
 const STATUSBAR_HEIGHT = Platform.OS === 'android' ? (StatusBar.currentHeight ?? 32) : 0;
 
@@ -83,102 +84,104 @@ export default function AnalyticsScreen() {
     return (
         <View style={styles.safeArea}>
             <StatusBar barStyle="light-content" backgroundColor={darkTheme.surfaceDark1} />
+            <ScreenTransition>
 
-            {/* Header */}
-            <View style={styles.header}>
-                <Text style={styles.headerTitle}>Analytics</Text>
-                <TouchableOpacity style={styles.filterBtn}>
-                    <Text style={styles.filterText}>This Week</Text>
-                    <MaterialCommunityIcons name="chevron-down" size={20} color="#94a3b8" />
-                </TouchableOpacity>
-            </View>
-
-            <ScrollView
-                style={styles.scrollView}
-                contentContainerStyle={styles.scrollContent}
-                showsVerticalScrollIndicator={false}
-            >
-                {/* TODAY'S FOCUS section label */}
-                <View style={styles.sectionLabelRow}>
-                    <Text style={styles.sectionLabel}>TODAY'S FOCUS</Text>
-                    <Text style={styles.sectionLabelRight}>{dateLabel}</Text>
+                {/* Header */}
+                <View style={styles.header}>
+                    <Text style={styles.headerTitle}>Analytics</Text>
+                    <TouchableOpacity style={styles.filterBtn}>
+                        <Text style={styles.filterText}>This Week</Text>
+                        <MaterialCommunityIcons name="chevron-down" size={20} color="#94a3b8" />
+                    </TouchableOpacity>
                 </View>
 
-                {/* Today's Focus Card */}
-                <View style={[styles.focusCard, shadows.elevation1]}>
-                    <DonutChart percentage={percentage} />
-                    <View style={styles.focusText}>
-                        <Text style={styles.focusTitle}>{statusText}</Text>
-                        <Text style={styles.focusSubtitle}>
-                            You've completed{' '}
-                            <Text style={styles.focusHighlight}>{completed} of {total}</Text>
-                            {' '}habits today.
-                        </Text>
-                        <TouchableOpacity style={styles.viewDetailsBtn}>
-                            <Text style={styles.viewDetailsText}>View Details</Text>
-                            <MaterialCommunityIcons name="arrow-right" size={16} color={darkTheme.mutedIndigoLight} />
-                        </TouchableOpacity>
+                <ScrollView
+                    style={styles.scrollView}
+                    contentContainerStyle={styles.scrollContent}
+                    showsVerticalScrollIndicator={false}
+                >
+                    {/* TODAY'S FOCUS section label */}
+                    <View style={styles.sectionLabelRow}>
+                        <Text style={styles.sectionLabel}>TODAY'S FOCUS</Text>
+                        <Text style={styles.sectionLabelRight}>{dateLabel}</Text>
                     </View>
-                </View>
 
-                {/* Streak Cards */}
-                <View style={styles.streakRow}>
-                    {/* Current Streak */}
-                    <View style={[styles.streakCard, shadows.elevation1]}>
-                        <View style={styles.streakGlow} />
-                        <View style={styles.streakLabelRow}>
-                            <MaterialCommunityIcons
-                                name="fire"
-                                size={20}
-                                color={darkTheme.primaryLight}
-                            />
-                            <Text style={[styles.streakLabel, { color: darkTheme.primaryLight }]}>CURRENT</Text>
-                        </View>
-                        <View style={styles.streakValue}>
-                            <Text style={styles.streakNumber}>{streaks.currentStreak}</Text>
-                            <Text style={styles.streakUnit}>Days</Text>
+                    {/* Today's Focus Card */}
+                    <View style={[styles.focusCard, shadows.elevation1]}>
+                        <DonutChart percentage={percentage} />
+                        <View style={styles.focusText}>
+                            <Text style={styles.focusTitle}>{statusText}</Text>
+                            <Text style={styles.focusSubtitle}>
+                                You've completed{' '}
+                                <Text style={styles.focusHighlight}>{completed} of {total}</Text>
+                                {' '}habits today.
+                            </Text>
+                            <TouchableOpacity style={styles.viewDetailsBtn}>
+                                <Text style={styles.viewDetailsText}>View Details</Text>
+                                <MaterialCommunityIcons name="arrow-right" size={16} color={darkTheme.mutedIndigoLight} />
+                            </TouchableOpacity>
                         </View>
                     </View>
 
-                    {/* Best Streak */}
-                    <View style={[styles.streakCard, shadows.elevation1]}>
-                        <View style={[styles.streakGlow, { backgroundColor: 'rgba(56,106,104,0.1)' }]} />
-                        <View style={styles.streakLabelRow}>
-                            <MaterialCommunityIcons
-                                name="trophy"
-                                size={20}
-                                color={darkTheme.tealLight}
-                            />
-                            <Text style={[styles.streakLabel, { color: darkTheme.tealLight }]}>BEST</Text>
+                    {/* Streak Cards */}
+                    <View style={styles.streakRow}>
+                        {/* Current Streak */}
+                        <View style={[styles.streakCard, shadows.elevation1]}>
+                            <View style={styles.streakGlow} />
+                            <View style={styles.streakLabelRow}>
+                                <MaterialCommunityIcons
+                                    name="fire"
+                                    size={20}
+                                    color={darkTheme.primaryLight}
+                                />
+                                <Text style={[styles.streakLabel, { color: darkTheme.primaryLight }]}>CURRENT</Text>
+                            </View>
+                            <View style={styles.streakValue}>
+                                <Text style={styles.streakNumber}>{streaks.currentStreak}</Text>
+                                <Text style={styles.streakUnit}>Days</Text>
+                            </View>
                         </View>
-                        <View style={styles.streakValue}>
-                            <Text style={styles.streakNumber}>{streaks.bestStreak}</Text>
-                            <Text style={styles.streakUnit}>Days</Text>
+
+                        {/* Best Streak */}
+                        <View style={[styles.streakCard, shadows.elevation1]}>
+                            <View style={[styles.streakGlow, { backgroundColor: 'rgba(56,106,104,0.1)' }]} />
+                            <View style={styles.streakLabelRow}>
+                                <MaterialCommunityIcons
+                                    name="trophy"
+                                    size={20}
+                                    color={darkTheme.tealLight}
+                                />
+                                <Text style={[styles.streakLabel, { color: darkTheme.tealLight }]}>BEST</Text>
+                            </View>
+                            <View style={styles.streakValue}>
+                                <Text style={styles.streakNumber}>{streaks.bestStreak}</Text>
+                                <Text style={styles.streakUnit}>Days</Text>
+                            </View>
                         </View>
                     </View>
-                </View>
 
-                {/* Weekly Completion Bar Chart */}
-                <WeeklyBarChart data={weeklyData} />
+                    {/* Weekly Completion Bar Chart */}
+                    <WeeklyBarChart data={weeklyData} />
 
-                {/* Activity Log / Heatmap */}
-                <View style={styles.sectionLabelRow}>
-                    <Text style={styles.activityTitle}>Activity Log</Text>
-                </View>
-                <HeatmapGrid data={heatmapData} />
+                    {/* Activity Log / Heatmap */}
+                    <View style={styles.sectionLabelRow}>
+                        <Text style={styles.activityTitle}>Activity Log</Text>
+                    </View>
+                    <HeatmapGrid data={heatmapData} />
 
-                {/* Smart Insights */}
-                <View style={styles.sectionLabelRow}>
-                    <Text style={styles.activityTitle}>Smart Insights</Text>
-                </View>
-                <View style={styles.insightsContainer}>
-                    {insights.map(insight => (
-                        <InsightCard key={insight.id} insight={insight} />
-                    ))}
-                </View>
+                    {/* Smart Insights */}
+                    <View style={styles.sectionLabelRow}>
+                        <Text style={styles.activityTitle}>Smart Insights</Text>
+                    </View>
+                    <View style={styles.insightsContainer}>
+                        {insights.map(insight => (
+                            <InsightCard key={insight.id} insight={insight} />
+                        ))}
+                    </View>
 
-                <View style={{ height: 100 }} />
-            </ScrollView>
+                    <View style={{ height: 100 }} />
+                </ScrollView>
+            </ScreenTransition>
         </View>
     );
 }

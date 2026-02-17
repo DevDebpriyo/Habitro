@@ -14,6 +14,7 @@ import { useRouter } from 'expo-router';
 import { useRoutineStore } from '../../src/store/useRoutineStore';
 import { useAuthStore } from '../../src/store/authStore';
 import { darkTheme, spacing, fontSize, radii } from '../../src/theme';
+import ScreenTransition from '../../src/components/ScreenTransition';
 
 export default function SettingsScreen() {
     const router = useRouter();
@@ -79,123 +80,125 @@ export default function SettingsScreen() {
     return (
         <View style={styles.safeArea}>
             <StatusBar barStyle="light-content" backgroundColor={darkTheme.surfaceDark1} />
+            <ScreenTransition>
 
-            {/* Header */}
-            <View style={styles.header}>
-                <TouchableOpacity style={styles.backBtn}>
-                    <MaterialCommunityIcons name="arrow-left" size={24} color={darkTheme.onSurface} />
-                </TouchableOpacity>
-                <Text style={styles.headerTitle}>Settings</Text>
-                <View style={{ width: 48 }} />
-            </View>
+                {/* Header */}
+                <View style={styles.header}>
+                    <TouchableOpacity style={styles.backBtn}>
+                        <MaterialCommunityIcons name="arrow-left" size={24} color={darkTheme.onSurface} />
+                    </TouchableOpacity>
+                    <Text style={styles.headerTitle}>Settings</Text>
+                    <View style={{ width: 48 }} />
+                </View>
 
-            <ScrollView
-                contentContainerStyle={styles.scrollContent}
-                showsVerticalScrollIndicator={false}
-            >
-                {/* User Profile Card */}
-                {user && (
-                    <View style={styles.profileCard}>
-                        <View style={styles.avatar}>
-                            <Text style={styles.avatarText}>{user.name.charAt(0).toUpperCase()}</Text>
+                <ScrollView
+                    contentContainerStyle={styles.scrollContent}
+                    showsVerticalScrollIndicator={false}
+                >
+                    {/* User Profile Card */}
+                    {user && (
+                        <View style={styles.profileCard}>
+                            <View style={styles.avatar}>
+                                <Text style={styles.avatarText}>{user.name.charAt(0).toUpperCase()}</Text>
+                            </View>
+                            <View style={styles.profileInfo}>
+                                <Text style={styles.profileName}>{user.name}</Text>
+                                <Text style={styles.profileEmail}>{user.email}</Text>
+                            </View>
                         </View>
-                        <View style={styles.profileInfo}>
-                            <Text style={styles.profileName}>{user.name}</Text>
-                            <Text style={styles.profileEmail}>{user.email}</Text>
+                    )}
+
+                    {/* Dark Mode Toggle */}
+                    <View style={styles.card}>
+                        <View style={styles.darkModeRow}>
+                            <View style={styles.darkModeTextWrap}>
+                                <Text style={styles.settingTitle}>Dark Mode</Text>
+                                <Text style={styles.settingSubtitle}>Adjust app appearance</Text>
+                            </View>
+                            <Switch
+                                value={isDarkMode}
+                                onValueChange={toggleDarkMode}
+                                trackColor={{
+                                    false: '#36343B',
+                                    true: darkTheme.primaryLight,
+                                }}
+                                thumbColor={isDarkMode ? '#381E72' : '#938F99'}
+                            />
                         </View>
                     </View>
-                )}
 
-                {/* Dark Mode Toggle */}
-                <View style={styles.card}>
-                    <View style={styles.darkModeRow}>
-                        <View style={styles.darkModeTextWrap}>
-                            <Text style={styles.settingTitle}>Dark Mode</Text>
-                            <Text style={styles.settingSubtitle}>Adjust app appearance</Text>
-                        </View>
-                        <Switch
-                            value={isDarkMode}
-                            onValueChange={toggleDarkMode}
-                            trackColor={{
-                                false: '#36343B',
-                                true: darkTheme.primaryLight,
-                            }}
-                            thumbColor={isDarkMode ? '#381E72' : '#938F99'}
-                        />
+                    {/* Data Management section */}
+                    <View style={styles.sectionHeader}>
+                        <Text style={styles.sectionTitle}>Data Management</Text>
                     </View>
-                </View>
 
-                {/* Data Management section */}
-                <View style={styles.sectionHeader}>
-                    <Text style={styles.sectionTitle}>Data Management</Text>
-                </View>
+                    <View style={styles.dataActions}>
+                        {/* Export Data */}
+                        <TouchableOpacity style={styles.exportBtn} onPress={handleExport} activeOpacity={0.8}>
+                            <MaterialCommunityIcons name="download" size={24} color={darkTheme.onSurface} />
+                            <Text style={styles.exportText}>Export Data</Text>
+                        </TouchableOpacity>
 
-                <View style={styles.dataActions}>
-                    {/* Export Data */}
-                    <TouchableOpacity style={styles.exportBtn} onPress={handleExport} activeOpacity={0.8}>
-                        <MaterialCommunityIcons name="download" size={24} color={darkTheme.onSurface} />
-                        <Text style={styles.exportText}>Export Data</Text>
-                    </TouchableOpacity>
+                        {/* Reset Routine */}
+                        <TouchableOpacity style={styles.resetBtn} onPress={handleReset} activeOpacity={0.8}>
+                            <MaterialCommunityIcons name="restart" size={24} color={darkTheme.onSurface} />
+                            <Text style={styles.resetText}>Reset Routine</Text>
+                        </TouchableOpacity>
 
-                    {/* Reset Routine */}
-                    <TouchableOpacity style={styles.resetBtn} onPress={handleReset} activeOpacity={0.8}>
-                        <MaterialCommunityIcons name="restart" size={24} color={darkTheme.onSurface} />
-                        <Text style={styles.resetText}>Reset Routine</Text>
-                    </TouchableOpacity>
-
-                    {/* Clear History */}
-                    <TouchableOpacity style={styles.clearBtn} onPress={handleClearHistory} activeOpacity={0.8}>
-                        <MaterialCommunityIcons name="delete-outline" size={24} color={darkTheme.error} />
-                        <View style={styles.clearTextWrap}>
-                            <Text style={styles.clearTitle}>Clear History</Text>
-                            <Text style={styles.clearSubtitle}>Permanently delete all logs</Text>
-                        </View>
-                    </TouchableOpacity>
-                </View>
-
-                {/* Account Actions */}
-                <View style={styles.sectionHeader}>
-                    <Text style={styles.sectionTitle}>Account</Text>
-                </View>
-                <TouchableOpacity style={styles.logoutBtn} onPress={handleLogout} activeOpacity={0.8}>
-                    <MaterialCommunityIcons name="logout" size={24} color={darkTheme.error} />
-                    <Text style={styles.logoutText}>Log Out</Text>
-                </TouchableOpacity>
-
-                {/* Info section */}
-                <View style={styles.card}>
-                    {/* App Info */}
-                    <TouchableOpacity style={styles.infoRow}>
-                        <View style={styles.infoLeft}>
-                            <MaterialCommunityIcons name="information-outline" size={24} color={darkTheme.outline} />
-                            <Text style={styles.infoText}>App Info</Text>
-                        </View>
-                        <MaterialCommunityIcons name="chevron-right" size={20} color={darkTheme.outline} />
-                    </TouchableOpacity>
-
-                    {/* Divider */}
-                    <View style={styles.divider} />
-
-                    {/* Support */}
-                    <TouchableOpacity style={styles.infoRow}>
-                        <View style={styles.infoLeft}>
-                            <MaterialCommunityIcons name="help-circle-outline" size={24} color={darkTheme.outline} />
-                            <Text style={styles.infoText}>Support</Text>
-                        </View>
-                        <MaterialCommunityIcons name="chevron-right" size={20} color={darkTheme.outline} />
-                    </TouchableOpacity>
-                </View>
-
-                {/* Version footer */}
-                <View style={styles.footer}>
-                    <View style={styles.footerIcon}>
-                        <MaterialCommunityIcons name="check-circle" size={24} color={darkTheme.primaryLight} />
+                        {/* Clear History */}
+                        <TouchableOpacity style={styles.clearBtn} onPress={handleClearHistory} activeOpacity={0.8}>
+                            <MaterialCommunityIcons name="delete-outline" size={24} color={darkTheme.error} />
+                            <View style={styles.clearTextWrap}>
+                                <Text style={styles.clearTitle}>Clear History</Text>
+                                <Text style={styles.clearSubtitle}>Permanently delete all logs</Text>
+                            </View>
+                        </TouchableOpacity>
                     </View>
-                    <Text style={styles.versionText}>Version 1.0.4</Text>
-                </View>
 
-                <View style={{ height: 100 }} />
-            </ScrollView>
+                    {/* Account Actions */}
+                    <View style={styles.sectionHeader}>
+                        <Text style={styles.sectionTitle}>Account</Text>
+                    </View>
+                    <TouchableOpacity style={styles.logoutBtn} onPress={handleLogout} activeOpacity={0.8}>
+                        <MaterialCommunityIcons name="logout" size={24} color={darkTheme.error} />
+                        <Text style={styles.logoutText}>Log Out</Text>
+                    </TouchableOpacity>
+
+                    {/* Info section */}
+                    <View style={styles.card}>
+                        {/* App Info */}
+                        <TouchableOpacity style={styles.infoRow}>
+                            <View style={styles.infoLeft}>
+                                <MaterialCommunityIcons name="information-outline" size={24} color={darkTheme.outline} />
+                                <Text style={styles.infoText}>App Info</Text>
+                            </View>
+                            <MaterialCommunityIcons name="chevron-right" size={20} color={darkTheme.outline} />
+                        </TouchableOpacity>
+
+                        {/* Divider */}
+                        <View style={styles.divider} />
+
+                        {/* Support */}
+                        <TouchableOpacity style={styles.infoRow}>
+                            <View style={styles.infoLeft}>
+                                <MaterialCommunityIcons name="help-circle-outline" size={24} color={darkTheme.outline} />
+                                <Text style={styles.infoText}>Support</Text>
+                            </View>
+                            <MaterialCommunityIcons name="chevron-right" size={20} color={darkTheme.outline} />
+                        </TouchableOpacity>
+                    </View>
+
+                    {/* Version footer */}
+                    <View style={styles.footer}>
+                        <View style={styles.footerIcon}>
+                            <MaterialCommunityIcons name="check-circle" size={24} color={darkTheme.primaryLight} />
+                        </View>
+                        <Text style={styles.versionText}>Version 1.0.4</Text>
+                    </View>
+
+                    <View style={{ height: 100 }} />
+                </ScrollView>
+            </ScreenTransition>
         </View>
     );
 }

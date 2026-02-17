@@ -17,6 +17,7 @@ import { useRoutineStore } from '../../src/store/useRoutineStore';
 import { darkTheme, spacing, fontSize, radii, CategoryColors } from '../../src/theme';
 import { Category, RoutineItem } from '../../src/types';
 import { to12Hour, formatTimeRange } from '../../src/utils/timeUtils';
+import ScreenTransition from '../../src/components/ScreenTransition';
 
 /** Category chip colors for the editor (uses brighter palette) */
 const editorChipColors: Record<string, { bg: string; text: string }> = {
@@ -214,37 +215,39 @@ export default function EditorScreen() {
     return (
         <View style={styles.safeArea}>
             <StatusBar barStyle="light-content" backgroundColor={darkTheme.surfaceDark1} />
+            <ScreenTransition>
 
-            {/* Header */}
-            <View style={styles.header}>
-                <TouchableOpacity style={styles.backBtn}>
-                    <MaterialCommunityIcons name="arrow-left" size={24} color={darkTheme.onSurface} />
-                </TouchableOpacity>
-                <Text style={styles.headerTitle}>Routine</Text>
-                <View style={styles.headerRight}>
-                    <View style={styles.profileIcon}>
-                        <MaterialCommunityIcons name="star-four-points" size={20} color="#FFAB91" />
+                {/* Header */}
+                <View style={styles.header}>
+                    <TouchableOpacity style={styles.backBtn}>
+                        <MaterialCommunityIcons name="arrow-left" size={24} color={darkTheme.onSurface} />
+                    </TouchableOpacity>
+                    <Text style={styles.headerTitle}>Routine</Text>
+                    <View style={styles.headerRight}>
+                        <View style={styles.profileIcon}>
+                            <MaterialCommunityIcons name="star-four-points" size={20} color="#FFAB91" />
+                        </View>
                     </View>
                 </View>
-            </View>
 
-            {/* Subheader */}
-            <View style={styles.subheader}>
-                <Text style={styles.subheaderTitle}>Morning Ritual</Text>
-                <Text style={styles.subheaderMeta}>
-                    {routines.length} items • {durationStr}
-                </Text>
-            </View>
+                {/* Subheader */}
+                <View style={styles.subheader}>
+                    <Text style={styles.subheaderTitle}>Morning Ritual</Text>
+                    <Text style={styles.subheaderMeta}>
+                        {routines.length} items • {durationStr}
+                    </Text>
+                </View>
 
-            {/* Routine List */}
-            <FlatList
-                data={routines}
-                keyExtractor={item => item.id}
-                renderItem={renderItem}
-                contentContainerStyle={styles.listContent}
-                showsVerticalScrollIndicator={false}
-                ListFooterComponent={<View style={{ height: 120 }} />}
-            />
+                {/* Routine List */}
+                <FlatList
+                    data={routines}
+                    keyExtractor={item => item.id}
+                    renderItem={renderItem}
+                    contentContainerStyle={styles.listContent}
+                    showsVerticalScrollIndicator={false}
+                    ListFooterComponent={<View style={{ height: 120 }} />}
+                />
+            </ScreenTransition>
 
             {/* FAB */}
             <TouchableOpacity style={styles.fab} onPress={openAdd} activeOpacity={0.8}>
